@@ -19,6 +19,13 @@ def register_client(client: schemas.ClientCreate, db: Session = Depends(get_db))
         raise HTTPException(status_code=400, detail="Client already registered")
     return crud.create_client(db, client)
 
+@router.post("/status")
+def post_status(status: schemas.ClientStatusCreate, db: Session = Depends(get_db)):
+    try:
+        return crud.create_client_status(db, status)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
 @router.get("/clients", response_model=list[schemas.ClientResponse])
 def list_clients(db: Session = Depends(get_db)):
     return crud.get_clients(db)

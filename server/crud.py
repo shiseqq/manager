@@ -46,3 +46,20 @@ def mark_command_processed(db: Session, cmd_id: int):
     if cmd:
         cmd.processed = True
         db.commit()
+
+def create_client_status(db: Session, status: schemas.ClientStatusCreate):
+    client = db.query(models.Client).filter_by(hostname=status.hostname).first()
+    if not client:
+        raise ValueError("Client not found")
+    db_status = models.ClientStatus(
+        client_id=client.id,
+        cpu=status.cpu,
+        ram=status.ram,
+        active_user=status.active_user,
+        status=status.status
+    )
+    db.add(db_status)
+    db.commit()
+    db.refresh(db_status)
+    return db_status
+       

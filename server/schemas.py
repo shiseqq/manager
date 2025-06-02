@@ -30,3 +30,10 @@ class CommandResponse(BaseModel):
     client_id: int
     command: str
     processed: bool
+
+class ClientStatusCreate(BaseModel):
+    mac: str
+    cpu_load: float
+    memory_usage: int
+    uptime: int
+

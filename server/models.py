@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Float, ForeignKey, Integer, String, Boolean, DateTime
 from datetime import datetime
 from .database import Base
 
@@ -18,3 +18,15 @@ class Command(Base):
     client_id = Column(Integer)
     command = Column(String)
     processed = Column(Boolean, default=False)
+
+class ClientStatus(Base):
+    __tablename__ = "client_status"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"))
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    cpu = Column(Float)
+    ram = Column(Float)
+    active_user = Column(String)
+    status = Column(String)
+
