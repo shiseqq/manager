@@ -1,11 +1,30 @@
 from PyQt6.QtWidgets import (
     QFrame, QVBoxLayout, QLabel, 
-    QPushButton, QMessageBox, QInputDialog
+    QPushButton, QMessageBox, QInputDialog, 
+    QDialog
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor
 
 class PCCard(QFrame):
+    DIALOG_STYLE = """
+            * {
+                color: black !important;
+            }
+            QSpinBox, QPushButton {
+                background-color: white;
+                border: 1ps solid #ccc;
+                padding: 5px
+            }
+            QPushButton:hover{
+                background-color: #f0f0f0;
+            }
+            QMessageBox QLable{
+                margin-left: 50px;
+                padding-left: 0px;
+                text-align: left;
+            }
+        """
     def __init__(self, pc_id):
         super().__init__()
         self.pc_id = pc_id
@@ -24,7 +43,7 @@ class PCCard(QFrame):
         # Заголовок с ID
         self.title = QLabel(f"Компьютер {self.pc_id}")
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.title.setStyleSheet("font-weight: bold; font-size: 14px; color: black;")
         
         # Статус
         self.status = QLabel()
@@ -33,6 +52,7 @@ class PCCard(QFrame):
         # Таймер
         self.timer_label = QLabel("Время: 00:00:00")
         self.timer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.timer_label.setStyleSheet("color: black;")
         
         # Кнопка
         self.action_btn = QPushButton()
@@ -54,14 +74,14 @@ class PCCard(QFrame):
             self.status.setText("🔴 Заблокирован")
             self.status.setStyleSheet("color: red;")
             self.action_btn.setText("Начать сеанс")
-            self.action_btn.setStyleSheet("background: #C8E6C9;")
+            self.action_btn.setStyleSheet("background: #C8E6C9; color: black;")
             self.timer.stop()
         else:
             self.setStyleSheet("background: #E8F5E9;")
             self.status.setText("🟢 Сеанс активен")
             self.status.setStyleSheet("color: green;")
             self.action_btn.setText("Завершить сеанс")
-            self.action_btn.setStyleSheet("background: #FFCDD2;")
+            self.action_btn.setStyleSheet("background: #FFCDD2; color: black;")
             self.timer.start(1000)
         
         self.update_timer()
@@ -84,30 +104,31 @@ class PCCard(QFrame):
             self.end_session()
     
     def start_session(self):
-        mins, ok = QInputDialog.getInt(
-            self,
-            "Начало сеанса",
-            "Длительность (минуты):",
-            value=60,
-            min=1,
-            max=999999,
-            step=5
-        )
+        # Создаем кастомный диалог
+        dialog = QInputDialog(self)
+        dialog.setStyleSheet(self.DIALOG_STYLE)
+        dialog.setWindowTitle("Начало сеанса")
+        dialog.setLabelText("Длительность (минуты):")
+        dialog.setIntValue(60)
+        dialog.setIntMinimum(1)
+        dialog.setIntMaximum(999999)
+        dialog.setIntStep(5)
         
-        if ok and mins > 0:
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            mins = dialog.intValue()
             self.is_locked = False
             self.time_left = mins * 60
             self.update_ui()
     
     def end_session(self):
-        confirm = QMessageBox.question(
-            self,
-            "Подтверждение",
-            f"Завершить сеанс на PC-{self.pc_id}?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
+        msg_box = QMessageBox()
+        msg_box.setStyleSheet(self.DIALOG_STYLE)
+        msg_box.setPalette(self.palette())
+        msg_box.setWindowTitle("Подтверждение")
+        msg_box.setText(f"Завершить сеанс на {self.pc_id}?")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         
-        if confirm == QMessageBox.StandardButton.Yes:
+        if msg_box.exec() == QMessageBox.StandardButton.Yes:
             self.is_locked = True
             self.time_left = 0
             self.update_ui()
