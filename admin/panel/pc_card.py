@@ -1,33 +1,35 @@
 from PyQt6.QtWidgets import (
     QFrame, QVBoxLayout, QLabel, 
     QPushButton, QMessageBox, QInputDialog, 
-    QDialog
+    QDialog, QHBoxLayout, QLineEdit
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QColor
 
 class PCCard(QFrame):
     DIALOG_STYLE = """
-            * {
-                color: black !important;
-            }
-            QSpinBox, QPushButton {
-                background-color: white;
-                border: 1ps solid #ccc;
-                padding: 5px
-            }
-            QPushButton:hover{
-                background-color: #f0f0f0;
-            }
-            QMessageBox QLable{
-                margin-left: 50px;
-                padding-left: 0px;
-                text-align: left;
-            }
-        """
-    def __init__(self, pc_id):
+        * {
+            color: black !important;
+        }
+        QSpinBox, QPushButton {
+            background-color: white;
+            border: 1px solid #ccc;
+            padding: 5px;
+        }
+        QPushButton:hover {
+            background-color: #f0f0f0;
+        }
+        QMessageBox QLabel {
+            margin-left: 50px;
+            padding-left: 0px;
+            text-align: left;
+        }
+    """
+    
+    def __init__(self, ip_address):
         super().__init__()
-        self.pc_id = pc_id
+        self.ip_address = ip_address  # Сохраняем IP адрес
+        self.custom_name = f"PC-{ip_address.split('.')[-1]}"  # Генерируем имя
         self.is_locked = True
         self.time_left = 0
         
@@ -40,10 +42,30 @@ class PCCard(QFrame):
         self.layout = QVBoxLayout()
         self.layout.setSpacing(10)
         
-        # Заголовок с ID
-        self.title = QLabel(f"Компьютер {self.pc_id}")
-        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title.setStyleSheet("font-weight: bold; font-size: 14px; color: black;")
+        # Верхняя строка с именем и кнопкой редактирования
+        self.name_layout = QHBoxLayout()
+        
+        # Поле для отображения имени
+        self.name_label = QLabel(self.custom_name)
+        self.name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.name_label.setStyleSheet("font-weight: bold; font-size: 14px; color: black;")
+        
+        # Поле для редактирования имени (изначально скрыто)
+        self.name_edit = QLineEdit(self.custom_name)
+        self.name_edit.setHidden(True)
+        self.name_edit.returnPressed.connect(self.save_name)
+        
+        # Кнопка редактирования имени
+        self.edit_btn = QPushButton("✏️")
+        self.edit_btn.setFixedSize(24, 24)
+        self.edit_btn.setStyleSheet("border: none; background: transparent;")
+        self.edit_btn.clicked.connect(self.toggle_name_edit)
+        
+        self.name_layout.addWidget(self.name_label)
+        self.name_layout.addWidget(self.name_edit)
+        self.name_layout.addWidget(self.edit_btn)
+        
+        self.layout.addLayout(self.name_layout)
         
         # Статус
         self.status = QLabel()
@@ -54,11 +76,10 @@ class PCCard(QFrame):
         self.timer_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.timer_label.setStyleSheet("color: black;")
         
-        # Кнопка
+        # Кнопка управления сеансом
         self.action_btn = QPushButton()
         self.action_btn.clicked.connect(self.handle_action)
         
-        self.layout.addWidget(self.title)
         self.layout.addWidget(self.status)
         self.layout.addWidget(self.timer_label)
         self.layout.addWidget(self.action_btn)
@@ -67,6 +88,26 @@ class PCCard(QFrame):
         # Таймер обновления
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_timer)
+    
+    def toggle_name_edit(self):
+        """Переключает режим редактирования имени"""
+        if self.name_edit.isHidden():
+            self.name_label.setHidden(True)
+            self.name_edit.setHidden(False)
+            self.name_edit.setFocus()
+            self.name_edit.setStyleSheet(self.DIALOG_STYLE)
+        else:
+            self.save_name()
+    
+    def save_name(self):
+        """Сохраняет новое имя компьютера"""
+        new_name = self.name_edit.text().strip()
+        if new_name:
+            self.custom_name = new_name
+            self.name_label.setText(new_name)
+        
+        self.name_edit.setHidden(True)
+        self.name_label.setHidden(False)
     
     def update_ui(self):
         if self.is_locked:
@@ -104,7 +145,6 @@ class PCCard(QFrame):
             self.end_session()
     
     def start_session(self):
-        # Создаем кастомный диалог
         dialog = QInputDialog(self)
         dialog.setStyleSheet(self.DIALOG_STYLE)
         dialog.setWindowTitle("Начало сеанса")
@@ -125,10 +165,22 @@ class PCCard(QFrame):
         msg_box.setStyleSheet(self.DIALOG_STYLE)
         msg_box.setPalette(self.palette())
         msg_box.setWindowTitle("Подтверждение")
-        msg_box.setText(f"Завершить сеанс на {self.pc_id}?")
+        msg_box.setText(f"Завершить сеанс на {self.custom_name}?")  # Используем кастомное имя
         msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         
         if msg_box.exec() == QMessageBox.StandardButton.Yes:
             self.is_locked = True
             self.time_left = 0
             self.update_ui()
+
+    @property
+    def ip_address(self):
+        return self._ip_address
+
+    @ip_address.setter
+    def ip_address(self, value):
+        self._ip_address = value
+        self.update_display()
+
+    def update_display(self):
+        self.title.setText(f"{self.custom_name} ({self.ip_address})")
