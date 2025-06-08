@@ -2,7 +2,7 @@ from PyQt6.QtWidgets import (QMainWindow, QScrollArea, QWidget,
                             QGridLayout, QLabel, QPushButton, QLineEdit)
 from PyQt6.QtCore import Qt, QTimer
 from core.network_scanner import NetworkScanner
-from .pc_card import PCCard
+from pc_card import PCCard
 import threading
 
 class AdminWindow(QMainWindow):
